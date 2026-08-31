@@ -4,114 +4,448 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <title>Google Auth + Firebase Test</title>
+  <title>Internal Message Board</title>
   <style>
     :root{
       --bg:#0b0d12;
-      --panel:#121620;
-      --panel2:#181e2b;
+      --panel:#11151e;
+      --panel2:#171c27;
+      --panel3:#0f131b;
       --text:#f7f8fb;
-      --muted:#9aa4b2;
-      --border:#2a3140;
+      --muted:#96a0af;
+      --border:#293140;
       --accent:#7c8cff;
+      --accent2:#a8b0ff;
       --danger:#ff6b6b;
-      --success:#43d17a;
+      --success:#53d98a;
+      --shadow:0 20px 60px rgba(0,0,0,.32);
     }
+
     *{box-sizing:border-box}
-    body{
-      margin:0;
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{min-height:100vh}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    img{display:block}
+    .hidden{display:none!important}
+
+    .auth-shell{
       min-height:100vh;
       display:grid;
       place-items:center;
-      padding:20px;
+      padding:22px;
       background:radial-gradient(circle at top,rgba(124,140,255,.14),transparent 35%),var(--bg);
-      color:var(--text);
-      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
-    .card{
-      width:min(460px,100%);
+    .auth-card{
+      width:min(470px,100%);
       padding:28px;
       border:1px solid var(--border);
       border-radius:24px;
-      background:rgba(18,22,32,.94);
-      box-shadow:0 24px 80px rgba(0,0,0,.42);
-      backdrop-filter:blur(18px);
+      background:rgba(17,21,30,.95);
+      box-shadow:var(--shadow);
     }
-    h1{margin:0 0 8px;font-size:28px;letter-spacing:-.03em}
-    .subtitle{margin:0 0 22px;color:var(--muted);line-height:1.5}
-    .google-wrap{min-height:44px;display:flex;justify-content:center;align-items:center;margin:14px 0 8px}
-    .hidden{display:none!important}
-    .status{margin-top:13px;min-height:20px;color:#ff9a9a;font-size:13px;line-height:1.45;text-align:center;white-space:pre-wrap}
+    .auth-card h1{margin:0 0 8px;font-size:29px;letter-spacing:-.03em}
+    .auth-card p{margin:0 0 22px;color:var(--muted);line-height:1.5}
+    .google-wrap{min-height:44px;display:flex;justify-content:center;align-items:center}
+    .status{min-height:20px;margin-top:12px;color:#ff9a9a;font-size:13px;line-height:1.45;white-space:pre-wrap}
     .status.success{color:#75e8a5}
-    .note{margin-top:18px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:#0f131c;color:var(--muted);font-size:12px;line-height:1.5}
-    .profile{display:flex;align-items:center;gap:14px;margin-top:18px;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--panel2)}
-    .avatar{width:52px;height:52px;flex:none;border-radius:50%;object-fit:cover;background:#242b39;border:1px solid var(--border)}
-    .profile-main{min-width:0;flex:1}
-    .profile-main strong,.profile-main span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .profile-main strong{font-size:16px}
-    .profile-main span{margin-top:3px;color:var(--muted);font-size:13px}
-    .badge{display:inline-flex;margin-top:8px;padding:5px 9px;border:1px solid rgba(67,209,122,.25);border-radius:999px;background:rgba(67,209,122,.12);color:#75e8a5;font-size:11px;font-weight:800}
-    label{display:block;margin:18px 0 7px;color:#d8deea;font-size:13px;font-weight:700}
-    input{width:100%;padding:13px 14px;border:1px solid var(--border);border-radius:12px;outline:none;background:var(--panel2);color:var(--text);font:inherit}
+    .note{margin-top:18px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:#0d1118;color:var(--muted);font-size:12px;line-height:1.5}
+    .profile-card{display:flex;align-items:center;gap:13px;padding:14px;border:1px solid var(--border);border-radius:15px;background:var(--panel2)}
+    .avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#252d3b;border:1px solid var(--border);flex:none}
+    .avatar.sm{width:34px;height:34px}
+    .avatar.lg{width:52px;height:52px}
+    .profile-copy{min-width:0;flex:1}
+    .profile-copy strong,.profile-copy span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .profile-copy span{margin-top:3px;color:var(--muted);font-size:13px}
+    label{display:block;margin:16px 0 7px;color:#dce2ee;font-size:13px;font-weight:700}
+    input{
+      width:100%;
+      padding:12px 13px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      outline:none;
+      background:var(--panel2);
+      color:var(--text);
+    }
     input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,140,255,.13)}
-    .primary,.logout{width:100%;margin-top:16px;padding:13px 16px;border-radius:13px;font-weight:800;cursor:pointer;transition:.16s ease}
-    .primary{border:0;background:var(--accent);color:#fff}
-    .primary:hover:not(:disabled){transform:translateY(-1px)}
-    .primary:disabled,.logout:disabled{opacity:.5;cursor:not-allowed}
-    .logout{border:1px solid rgba(255,107,107,.35);background:transparent;color:#ff9a9a}
-    .uid{margin-top:14px;padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:#0f131c;color:var(--muted);font-size:11px;line-height:1.45;word-break:break-all}
-    code{color:#dfe3ff}
+    .primary{
+      width:100%;
+      margin-top:16px;
+      padding:12px 14px;
+      border:0;
+      border-radius:12px;
+      background:var(--accent);
+      color:white;
+      font-weight:800;
+    }
+    button:disabled{opacity:.5;cursor:not-allowed}
+
+    .app-shell{
+      min-height:100vh;
+      display:grid;
+      grid-template-rows:auto 1fr;
+      background:var(--bg);
+    }
+
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:20;
+      display:grid;
+      grid-template-columns:260px minmax(260px,560px) 1fr auto;
+      gap:14px;
+      align-items:center;
+      min-height:68px;
+      padding:10px 14px;
+      border-bottom:1px solid var(--border);
+      background:rgba(11,13,18,.94);
+      backdrop-filter:blur(16px);
+    }
+    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.02em}
+    .brand-mark{
+      width:34px;height:34px;border-radius:10px;
+      display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--accent),#a867ff);
+      color:white;font-weight:900
+    }
+    .directory-search-wrap{position:relative}
+    .directory-search{padding-left:38px;background:#111620}
+    .search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+    .top-actions{display:flex;justify-content:flex-end;gap:8px;min-width:0}
+    .ghost-btn,.danger-btn,.mini-btn{
+      border:1px solid var(--border);
+      background:var(--panel2);
+      color:var(--text);
+      border-radius:11px;
+      font-weight:700;
+    }
+    .ghost-btn{padding:10px 12px}
+    .danger-btn{padding:9px 12px;color:#ff9a9a;border-color:rgba(255,107,107,.35);background:transparent}
+    .mini-btn{padding:7px 9px;font-size:12px}
+    .mini-btn.primary-mini{background:var(--accent);border-color:var(--accent);color:white}
+    .me-chip{display:flex;align-items:center;gap:9px;min-width:0}
+    .me-chip .text{min-width:0}
+    .me-chip strong,.me-chip span{display:block;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .me-chip span{font-size:11px;color:var(--muted);margin-top:2px}
+
+    .directory-panel{
+      position:absolute;
+      z-index:30;
+      top:68px;
+      left:274px;
+      width:min(640px,calc(100vw - 300px));
+      max-height:62vh;
+      overflow:auto;
+      border:1px solid var(--border);
+      border-top:0;
+      border-radius:0 0 16px 16px;
+      background:#10151e;
+      box-shadow:var(--shadow);
+    }
+    .directory-head{
+      position:sticky;top:0;z-index:2;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:11px 13px;border-bottom:1px solid var(--border);background:#10151e;
+    }
+    .directory-head strong{font-size:13px}
+    .directory-list{padding:6px}
+    .directory-row{
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:9px;
+      border-radius:11px;
+    }
+    .directory-row:hover{background:#171d29}
+    .directory-row.self{opacity:.8}
+    .directory-main{min-width:0}
+    .directory-name{display:flex;gap:7px;align-items:center;min-width:0}
+    .directory-name strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .online-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex:none}
+    .directory-meta{margin-top:3px;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .row-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+    .workspace{
+      min-height:0;
+      display:grid;
+      grid-template-columns:280px minmax(0,1fr);
+    }
+
+    .sidebar{
+      min-height:0;
+      border-right:1px solid var(--border);
+      background:#0e1219;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .sidebar-scroll{min-height:0;overflow:auto;padding:12px}
+    .side-section{margin-bottom:18px}
+    .side-title{
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+      padding:0 3px 8px;color:#d8deea;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;
+    }
+    .side-title .count{color:var(--muted);font-weight:700;letter-spacing:0}
+    .side-item{
+      width:100%;
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      align-items:center;
+      gap:9px;
+      padding:9px;
+      border:0;
+      border-radius:11px;
+      background:transparent;
+      color:var(--text);
+      text-align:left;
+    }
+    .side-item:hover,.side-item.active{background:#171d29}
+    .side-item.active{outline:1px solid rgba(124,140,255,.24)}
+    .side-copy{min-width:0}
+    .side-copy strong,.side-copy span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .side-copy strong{font-size:13px}
+    .side-copy span{margin-top:2px;font-size:11px;color:var(--muted)}
+    .side-badge{font-size:10px;color:var(--muted)}
+    .empty-small{padding:10px 8px;color:var(--muted);font-size:12px;line-height:1.5}
+    .create-group-btn{
+      width:100%;padding:10px;border:1px dashed #394254;border-radius:11px;background:transparent;color:#cbd2df;font-weight:800
+    }
+
+    .chat-area{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:#0b0e14}
+    .chat-header{
+      min-height:68px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:11px 16px;
+      border-bottom:1px solid var(--border);
+      background:#0e1219;
+    }
+    .chat-identity{display:flex;align-items:center;gap:11px;min-width:0}
+    .chat-identity-copy{min-width:0}
+    .chat-identity-copy strong,.chat-identity-copy span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chat-identity-copy span{margin-top:3px;color:var(--muted);font-size:12px}
+    .chat-body{min-height:0;overflow:auto;padding:18px 18px 26px}
+    .empty-chat{height:100%;min-height:300px;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px}
+    .empty-chat-inner{max-width:430px}
+    .empty-chat h2{color:var(--text);margin:0 0 8px}
+    .messages{display:flex;flex-direction:column;gap:9px}
+    .message-row{display:flex;gap:8px;align-items:flex-end}
+    .message-row.mine{justify-content:flex-end}
+    .bubble{
+      max-width:min(680px,78%);
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:15px 15px 15px 4px;
+      background:#171d28;
+      line-height:1.42;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+    .message-row.mine .bubble{
+      border-color:rgba(124,140,255,.35);
+      background:rgba(124,140,255,.18);
+      border-radius:15px 15px 4px 15px;
+    }
+    .message-author{font-size:11px;font-weight:800;color:var(--accent2);margin-bottom:4px}
+    .message-time{margin-top:5px;color:var(--muted);font-size:10px;text-align:right}
+    .composer{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:9px;
+      padding:12px 14px;
+      border-top:1px solid var(--border);
+      background:#0e1219;
+    }
+    .composer input{background:#151b25}
+    .send-btn{padding:0 18px;border:0;border-radius:12px;background:var(--accent);color:white;font-weight:900}
+
+    .modal-backdrop{
+      position:fixed;inset:0;z-index:60;
+      display:grid;place-items:center;
+      padding:18px;
+      background:rgba(0,0,0,.62);
+    }
+    .modal{
+      width:min(560px,100%);
+      max-height:min(760px,90vh);
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:#111620;
+      box-shadow:var(--shadow);
+      padding:18px;
+    }
+    .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .modal-head h2{margin:0;font-size:20px}
+    .modal-close{border:0;background:transparent;color:var(--muted);font-size:24px;line-height:1}
+    .member-search{margin-top:13px}
+    .member-list{margin-top:10px;border:1px solid var(--border);border-radius:12px;max-height:330px;overflow:auto}
+    .member-row{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:9px;align-items:center;padding:9px;border-bottom:1px solid #222a37}
+    .member-row:last-child{border-bottom:0}
+    .member-row input{width:18px;height:18px}
+    .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+    .modal-actions button{padding:10px 13px;border-radius:11px;font-weight:800}
+    .modal-actions .cancel{border:1px solid var(--border);background:var(--panel2);color:var(--text)}
+    .modal-actions .create{border:0;background:var(--accent);color:white}
+
+    @media (max-width:900px){
+      .topbar{grid-template-columns:auto minmax(0,1fr) auto}
+      .topbar .brand span{display:none}
+      .top-actions{display:none}
+      .directory-panel{left:66px;width:calc(100vw - 80px)}
+      .workspace{grid-template-columns:230px minmax(0,1fr)}
+      .me-chip .text{display:none}
+    }
+    @media (max-width:680px){
+      .topbar{grid-template-columns:auto minmax(0,1fr) auto;padding:9px}
+      .directory-panel{left:8px;right:8px;width:auto}
+      .workspace{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+      .sidebar{border-right:0;border-bottom:1px solid var(--border);max-height:235px}
+      .sidebar-scroll{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+      .side-section{margin:0}
+      .chat-area{min-height:calc(100vh - 68px - 235px)}
+      .bubble{max-width:88%}
+      .me-chip{display:flex}
+      .me-chip .avatar{display:none}
+      .danger-btn{padding:9px 10px;font-size:12px}
+    }
   </style>
 </head>
 <body>
-  <main class="card">
-    <section id="loginView">
-      <h1>Sign in</h1>
-      <p class="subtitle">Real Google authentication + Firebase Authentication + Cloud Firestore.</p>
+  <section id="authShell" class="auth-shell">
+    <div id="loginView" class="auth-card">
+      <h1>Internal Message Board</h1>
+      <p>Sign in with Google to access the private Firebase-backed workspace.</p>
       <div id="googleButton" class="google-wrap"></div>
       <div id="loginStatus" class="status"></div>
-      <div class="note">
-        Your Google identity is authenticated by Firebase. Your username and profile are stored online in Firestore,
-        so the same account can be restored on another browser or device after signing in with the same Google account.
-      </div>
-    </section>
+      <div class="note">Only authenticated users can access the directory. Direct messages and groups are restricted to their members by Firestore Security Rules.</div>
+    </div>
 
-    <section id="usernameView" class="hidden">
+    <div id="usernameView" class="auth-card hidden">
       <h1>Choose a username</h1>
-      <p class="subtitle">Google + Firebase authentication succeeded. Pick the username for this account.</p>
-      <div class="profile">
-        <img id="pendingAvatar" class="avatar" alt="Google profile picture" />
-        <div class="profile-main">
+      <p>This becomes your internal directory name.</p>
+      <div class="profile-card">
+        <img id="pendingAvatar" class="avatar lg" alt="Google profile picture">
+        <div class="profile-copy">
           <strong id="pendingName"></strong>
           <span id="pendingEmail"></span>
-          <div class="badge">Firebase authenticated</div>
         </div>
       </div>
       <label for="usernameInput">Username</label>
-      <input id="usernameInput" type="text" maxlength="24" autocomplete="username" placeholder="your_username" />
+      <input id="usernameInput" type="text" maxlength="24" autocomplete="username" placeholder="your_username">
       <button id="saveUsernameBtn" class="primary">Create account</button>
       <div id="usernameStatus" class="status"></div>
-    </section>
+    </div>
+  </section>
 
-    <section id="accountView" class="hidden">
-      <h1>Account</h1>
-      <p class="subtitle">Your online account is loaded from Firestore.</p>
-      <div class="profile">
-        <img id="accountAvatar" class="avatar" alt="Google profile picture" />
-        <div class="profile-main">
-          <strong id="accountUsername"></strong>
-          <span id="accountEmail"></span>
-          <div class="badge">Google · Firebase · Firestore</div>
+  <section id="appShell" class="app-shell hidden">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <span>Internal Board</span>
+      </div>
+
+      <div class="directory-search-wrap">
+        <span class="search-icon">⌕</span>
+        <input id="directorySearch" class="directory-search" type="search" placeholder="Search every user…" autocomplete="off">
+      </div>
+
+      <div class="top-actions">
+        <button id="peopleBtn" class="ghost-btn" type="button">All people</button>
+        <button id="newGroupTopBtn" class="ghost-btn" type="button">New group</button>
+      </div>
+
+      <div class="me-chip">
+        <img id="meAvatar" class="avatar sm" alt="">
+        <div class="text">
+          <strong id="meUsername"></strong>
+          <span id="meEmail"></span>
         </div>
+        <button id="logoutBtn" class="danger-btn" type="button">Sign out</button>
       </div>
-      <div id="accountUid" class="uid"></div>
-      <button id="logoutBtn" class="logout">Sign out</button>
-      <div class="note">
-        Signing out ends the Firebase session for this site. Your Firestore account remains online and will load again
-        when you sign in with the same Google account.
+
+      <section id="directoryPanel" class="directory-panel hidden" aria-label="All users">
+        <div class="directory-head">
+          <strong>All users · alphabetical</strong>
+          <span id="directoryCount" class="side-badge">0 users</span>
+        </div>
+        <div id="directoryList" class="directory-list"></div>
+      </section>
+    </header>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="sidebar-scroll">
+          <section class="side-section">
+            <div class="side-title">
+              <span>Saved contacts</span>
+              <span id="contactCount" class="count">0</span>
+            </div>
+            <div id="contactsList"></div>
+          </section>
+
+          <section class="side-section">
+            <div class="side-title">
+              <span>Groups</span>
+              <span id="groupCount" class="count">0</span>
+            </div>
+            <div id="groupsList"></div>
+            <button id="newGroupBtn" class="create-group-btn" type="button">+ Create group</button>
+          </section>
+        </div>
+      </aside>
+
+      <main class="chat-area">
+        <header class="chat-header">
+          <div class="chat-identity">
+            <img id="chatAvatar" class="avatar hidden" alt="">
+            <div class="chat-identity-copy">
+              <strong id="chatTitle">No conversation selected</strong>
+              <span id="chatMeta">Choose a saved contact, user, or group.</span>
+            </div>
+          </div>
+          <div id="chatHeaderActions"></div>
+        </header>
+
+        <section id="chatBody" class="chat-body">
+          <div id="emptyChat" class="empty-chat">
+            <div class="empty-chat-inner">
+              <h2>Your internal message board</h2>
+              <p>Use the user directory above to save contacts or start a message. Create groups from the left sidebar.</p>
+            </div>
+          </div>
+          <div id="messages" class="messages hidden"></div>
+        </section>
+
+        <form id="composer" class="composer hidden">
+          <input id="messageInput" maxlength="4000" autocomplete="off" placeholder="Write a message…">
+          <button id="sendBtn" class="send-btn" type="submit">Send</button>
+        </form>
+      </main>
+    </div>
+  </section>
+
+  <div id="groupModal" class="modal-backdrop hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="groupModalTitle">
+      <div class="modal-head">
+        <h2 id="groupModalTitle">Create group</h2>
+        <button id="closeGroupModalBtn" class="modal-close" type="button" aria-label="Close">×</button>
       </div>
-    </section>
-  </main>
+      <label for="groupNameInput">Group name</label>
+      <input id="groupNameInput" maxlength="60" placeholder="Design Team">
+      <label for="groupMemberSearch">Add members</label>
+      <input id="groupMemberSearch" class="member-search" type="search" placeholder="Search users…">
+      <div id="groupMemberList" class="member-list"></div>
+      <div id="groupStatus" class="status"></div>
+      <div class="modal-actions">
+        <button id="cancelGroupBtn" class="cancel" type="button">Cancel</button>
+        <button id="createGroupBtn" class="create" type="button">Create group</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://accounts.google.com/gsi/client" async defer onload="window.onGoogleLibraryLoad && window.onGoogleLibraryLoad()"></script>
 
@@ -140,11 +474,20 @@
     } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
     import {
       getFirestore,
+      collection,
       doc,
       getDoc,
       setDoc,
+      addDoc,
+      deleteDoc,
       runTransaction,
-      serverTimestamp
+      serverTimestamp,
+      onSnapshot,
+      query,
+      orderBy,
+      where,
+      limit,
+      writeBatch
     } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
     const app = initializeApp(firebaseConfig);
@@ -152,237 +495,822 @@
     const db = getFirestore(app);
     await setPersistence(auth, browserLocalPersistence);
 
-    const loginView = document.getElementById("loginView");
-    const usernameView = document.getElementById("usernameView");
-    const accountView = document.getElementById("accountView");
-    const loginStatus = document.getElementById("loginStatus");
-    const usernameStatus = document.getElementById("usernameStatus");
-    const usernameInput = document.getElementById("usernameInput");
-    const saveUsernameBtn = document.getElementById("saveUsernameBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
+    const $ = id => document.getElementById(id);
+
+    const authShell = $("authShell");
+    const loginView = $("loginView");
+    const usernameView = $("usernameView");
+    const appShell = $("appShell");
+
+    const loginStatus = $("loginStatus");
+    const usernameStatus = $("usernameStatus");
+    const usernameInput = $("usernameInput");
+    const saveUsernameBtn = $("saveUsernameBtn");
+
+    const directorySearch = $("directorySearch");
+    const directoryPanel = $("directoryPanel");
+    const directoryList = $("directoryList");
+    const directoryCount = $("directoryCount");
+    const peopleBtn = $("peopleBtn");
+
+    const contactsList = $("contactsList");
+    const contactCount = $("contactCount");
+    const groupsList = $("groupsList");
+    const groupCount = $("groupCount");
+
+    const chatAvatar = $("chatAvatar");
+    const chatTitle = $("chatTitle");
+    const chatMeta = $("chatMeta");
+    const chatHeaderActions = $("chatHeaderActions");
+    const emptyChat = $("emptyChat");
+    const messagesEl = $("messages");
+    const composer = $("composer");
+    const messageInput = $("messageInput");
+    const sendBtn = $("sendBtn");
+
+    const groupModal = $("groupModal");
+    const groupNameInput = $("groupNameInput");
+    const groupMemberSearch = $("groupMemberSearch");
+    const groupMemberList = $("groupMemberList");
+    const groupStatus = $("groupStatus");
+    const createGroupBtn = $("createGroupBtn");
 
     let pendingFirebaseUser = null;
+    let currentAccount = null;
+    let currentUser = null;
     let googleInitialized = false;
-    let authBootFinished = false;
 
-    function showOnly(view) {
-      loginView.classList.add("hidden");
-      usernameView.classList.add("hidden");
-      accountView.classList.add("hidden");
-      view.classList.remove("hidden");
-    }
+    let profiles = [];
+    let profileByUid = new Map();
+    let contacts = [];
+    let contactUidSet = new Set();
+    let groups = [];
 
-    function setStatus(element, message = "", success = false) {
-      element.textContent = message;
-      element.classList.toggle("success", success);
-    }
+    let selectedChat = null;
+    let unsubscribeProfiles = null;
+    let unsubscribeContacts = null;
+    let unsubscribeGroups = null;
+    let unsubscribeMessages = null;
+    let activityTimer = null;
+    let lastActivityWrite = 0;
 
-    function safePicture(url) {
+    function safePicture(url, fallbackText = "U") {
       if (typeof url === "string" && /^https:\/\/.+/i.test(url)) return url;
       return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
         '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">' +
-        '<rect width="100" height="100" rx="50" fill="#2a3140"/>' +
-        '<text x="50" y="61" text-anchor="middle" fill="#ffffff" font-size="42" font-family="Arial">G</text>' +
-        '</svg>'
+        '<rect width="100" height="100" rx="50" fill="#283141"/>' +
+        '<text x="50" y="62" text-anchor="middle" fill="#ffffff" font-size="42" font-family="Arial">' +
+        String(fallbackText || "U").slice(0,1).toUpperCase().replace(/[<>&]/g,"") +
+        '</text></svg>'
       );
     }
 
-    function isValidUsername(username) {
-      return /^[A-Za-z0-9_.-]{3,24}$/.test(username);
+    function setStatus(el, text = "", success = false) {
+      el.textContent = text;
+      el.classList.toggle("success", !!success);
     }
 
-    function normalizeUsername(username) {
-      return username.trim().toLowerCase();
+    function showAuth(view) {
+      authShell.classList.remove("hidden");
+      appShell.classList.add("hidden");
+      loginView.classList.add("hidden");
+      usernameView.classList.add("hidden");
+      view.classList.remove("hidden");
     }
 
-    function showUsernameSetup(user) {
-      pendingFirebaseUser = user;
-      document.getElementById("pendingAvatar").src = safePicture(user.photoURL);
-      document.getElementById("pendingName").textContent = user.displayName || "Google user";
-      document.getElementById("pendingEmail").textContent = user.email || "No email";
-      usernameInput.value = "";
-      setStatus(usernameStatus, "");
-      showOnly(usernameView);
-      setTimeout(() => usernameInput.focus(), 0);
-    }
-
-    function showAccount(account, uid) {
-      pendingFirebaseUser = null;
-      document.getElementById("accountAvatar").src = safePicture(account.photoURL || account.picture);
-      document.getElementById("accountUsername").textContent = account.username || "Unnamed user";
-      document.getElementById("accountEmail").textContent = account.email || "";
-      document.getElementById("accountUid").textContent = "Firebase UID: " + uid;
-      showOnly(accountView);
+    function showApp() {
+      authShell.classList.add("hidden");
+      appShell.classList.remove("hidden");
     }
 
     function friendlyError(error) {
       console.error(error);
       const code = error?.code || "";
-
-      if (code === "auth/unauthorized-domain") {
-        return "Firebase blocked this hostname.\nAdd timmiballz22.github.io in Firebase Authentication → Settings → Authorized domains.";
-      }
-      if (code === "auth/operation-not-allowed") {
-        return "Google sign-in is not enabled in Firebase Authentication.\nEnable Google under Authentication → Sign-in method.";
-      }
-      if (code === "auth/invalid-credential" || code === "auth/invalid-idp-response") {
-        return "Firebase rejected the Google credential. Check that this Google OAuth Client ID belongs to the same Google/Firebase project.";
-      }
-      if (code === "permission-denied" || code === "firestore/permission-denied") {
-        return "Firestore denied the request. Re-check your published Firestore Security Rules.";
-      }
-      if (code === "unavailable" || code === "firestore/unavailable") {
-        return "Firebase is temporarily unavailable or the browser is offline.";
-      }
+      if (code === "auth/unauthorized-domain") return "Firebase blocked this hostname. Add timmiballz22.github.io under Firebase Authentication → Settings → Authorized domains.";
+      if (code === "auth/operation-not-allowed") return "Google sign-in is not enabled in Firebase Authentication.";
+      if (code === "permission-denied" || code === "firestore/permission-denied") return "Firestore denied this request. Update the Security Rules to the message-board rules supplied with this file.";
+      if (code === "unavailable" || code === "firestore/unavailable") return "Firebase is temporarily unavailable or you are offline.";
       return error?.message || "Something went wrong.";
     }
 
-    async function loadOrCreateFlow(user) {
-      if (!user) return;
-      setStatus(loginStatus, "");
+    function isValidUsername(value) {
+      return /^[A-Za-z0-9_.-]{3,24}$/.test(value.trim());
+    }
 
+    function normalizeUsername(value) {
+      return value.trim().toLowerCase();
+    }
+
+    function timestampMs(value) {
+      if (!value) return 0;
+      if (typeof value.toMillis === "function") return value.toMillis();
+      if (typeof value.seconds === "number") return value.seconds * 1000;
+      if (value instanceof Date) return value.getTime();
+      return 0;
+    }
+
+    function formatRelative(value) {
+      const ms = timestampMs(value);
+      if (!ms) return "unknown";
+      const diff = Math.max(0, Date.now() - ms);
+      const sec = Math.floor(diff / 1000);
+      if (sec < 30) return "now";
+      if (sec < 60) return sec + "s ago";
+      const min = Math.floor(sec / 60);
+      if (min < 60) return min + "m ago";
+      const hr = Math.floor(min / 60);
+      if (hr < 24) return hr + "h ago";
+      const day = Math.floor(hr / 24);
+      if (day < 30) return day + "d ago";
+      return new Date(ms).toLocaleDateString();
+    }
+
+    function formatJoined(value) {
+      const ms = timestampMs(value);
+      if (!ms) return "Unknown join date";
+      return new Date(ms).toLocaleDateString(undefined, {year:"numeric",month:"short",day:"numeric"});
+    }
+
+    function isRecentlyActive(profile) {
+      const ms = timestampMs(profile?.lastActiveAt);
+      return ms > 0 && Date.now() - ms < 2.5 * 60 * 1000;
+    }
+
+    function profileLabel(profile) {
+      return profile?.username || profile?.displayName || "Unknown user";
+    }
+
+    async function ensureProfile(user, account) {
+      const profileRef = doc(db, "profiles", user.uid);
+      const existing = await getDoc(profileRef);
+      const joinedAt = existing.exists()
+        ? existing.data().joinedAt || account.createdAt || serverTimestamp()
+        : account.createdAt || serverTimestamp();
+
+      await setDoc(profileRef, {
+        uid:user.uid,
+        username:account.username,
+        usernameNormalized:normalizeUsername(account.username),
+        displayName:user.displayName || account.displayName || "",
+        photoURL:user.photoURL || account.photoURL || "",
+        joinedAt,
+        lastActiveAt:serverTimestamp()
+      }, {merge:true});
+    }
+
+    async function updateLastActive(force = false) {
+      if (!currentUser || document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (!force && now - lastActivityWrite < 90000) return;
+      lastActivityWrite = now;
+      try {
+        await setDoc(doc(db, "profiles", currentUser.uid), {
+          lastActiveAt:serverTimestamp()
+        }, {merge:true});
+      } catch (error) {
+        console.warn("lastActive update failed", error);
+      }
+    }
+
+    function startActivityHeartbeat() {
+      stopActivityHeartbeat();
+      updateLastActive(true);
+      activityTimer = setInterval(() => updateLastActive(false), 120000);
+    }
+
+    function stopActivityHeartbeat() {
+      if (activityTimer) clearInterval(activityTimer);
+      activityTimer = null;
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") updateLastActive(true);
+    });
+
+    function renderCurrentUser() {
+      $("meAvatar").src = safePicture(currentAccount?.photoURL || currentUser?.photoURL, currentAccount?.username);
+      $("meUsername").textContent = currentAccount?.username || "";
+      $("meEmail").textContent = currentAccount?.email || currentUser?.email || "";
+    }
+
+    function renderDirectory() {
+      const term = directorySearch.value.trim().toLowerCase();
+      const filtered = profiles.filter(p => {
+        const hay = `${p.username || ""} ${p.displayName || ""}`.toLowerCase();
+        return !term || hay.includes(term);
+      });
+
+      directoryCount.textContent = `${filtered.length} user${filtered.length === 1 ? "" : "s"}`;
+      directoryList.innerHTML = "";
+
+      if (!filtered.length) {
+        directoryList.innerHTML = '<div class="empty-small">No users match that search.</div>';
+        return;
+      }
+
+      for (const profile of filtered) {
+        const row = document.createElement("div");
+        row.className = "directory-row" + (profile.uid === currentUser?.uid ? " self" : "");
+
+        const avatar = document.createElement("img");
+        avatar.className = "avatar sm";
+        avatar.src = safePicture(profile.photoURL, profile.username);
+        avatar.alt = "";
+
+        const main = document.createElement("div");
+        main.className = "directory-main";
+
+        const name = document.createElement("div");
+        name.className = "directory-name";
+        if (isRecentlyActive(profile)) {
+          const dot = document.createElement("span");
+          dot.className = "online-dot";
+          dot.title = "Recently active";
+          name.appendChild(dot);
+        }
+        const strong = document.createElement("strong");
+        strong.textContent = profileLabel(profile) + (profile.uid === currentUser?.uid ? " (you)" : "");
+        name.appendChild(strong);
+
+        const meta = document.createElement("div");
+        meta.className = "directory-meta";
+        meta.textContent = `Joined ${formatJoined(profile.joinedAt)} · Last active ${formatRelative(profile.lastActiveAt)}`;
+
+        main.append(name, meta);
+
+        const actions = document.createElement("div");
+        actions.className = "row-actions";
+
+        if (profile.uid !== currentUser?.uid) {
+          const saveBtn = document.createElement("button");
+          saveBtn.className = "mini-btn";
+          saveBtn.type = "button";
+          saveBtn.textContent = contactUidSet.has(profile.uid) ? "Saved" : "Save";
+          saveBtn.addEventListener("click", async event => {
+            event.stopPropagation();
+            if (contactUidSet.has(profile.uid)) await removeContact(profile.uid);
+            else await saveContact(profile.uid);
+          });
+
+          const msgBtn = document.createElement("button");
+          msgBtn.className = "mini-btn primary-mini";
+          msgBtn.type = "button";
+          msgBtn.textContent = "Message";
+          msgBtn.addEventListener("click", async event => {
+            event.stopPropagation();
+            directoryPanel.classList.add("hidden");
+            await openDirectChat(profile.uid);
+          });
+
+          actions.append(saveBtn, msgBtn);
+        }
+
+        row.append(avatar, main, actions);
+        row.addEventListener("click", async () => {
+          if (profile.uid === currentUser?.uid) return;
+          directoryPanel.classList.add("hidden");
+          await openDirectChat(profile.uid);
+        });
+
+        directoryList.appendChild(row);
+      }
+    }
+
+    function renderContacts() {
+      contactCount.textContent = String(contacts.length);
+      contactsList.innerHTML = "";
+
+      if (!contacts.length) {
+        contactsList.innerHTML = '<div class="empty-small">No saved contacts yet. Use the user directory above to save people.</div>';
+        return;
+      }
+
+      const sorted = [...contacts].sort((a,b) => {
+        const pa = profileByUid.get(a.uid);
+        const pb = profileByUid.get(b.uid);
+        return profileLabel(pa).localeCompare(profileLabel(pb), undefined, {sensitivity:"base"});
+      });
+
+      for (const contact of sorted) {
+        const profile = profileByUid.get(contact.uid);
+        if (!profile) continue;
+
+        const btn = document.createElement("button");
+        btn.className = "side-item" + (selectedChat?.type === "direct" && selectedChat.otherUid === profile.uid ? " active" : "");
+        btn.type = "button";
+
+        const avatar = document.createElement("img");
+        avatar.className = "avatar sm";
+        avatar.src = safePicture(profile.photoURL, profile.username);
+        avatar.alt = "";
+
+        const copy = document.createElement("div");
+        copy.className = "side-copy";
+        const strong = document.createElement("strong");
+        strong.textContent = profileLabel(profile);
+        const meta = document.createElement("span");
+        meta.textContent = `Active ${formatRelative(profile.lastActiveAt)}`;
+        copy.append(strong, meta);
+
+        const badge = document.createElement("span");
+        badge.className = "side-badge";
+        badge.textContent = isRecentlyActive(profile) ? "●" : "";
+
+        btn.append(avatar, copy, badge);
+        btn.addEventListener("click", () => openDirectChat(profile.uid));
+        contactsList.appendChild(btn);
+      }
+    }
+
+    function renderGroups() {
+      groupCount.textContent = String(groups.length);
+      groupsList.innerHTML = "";
+
+      if (!groups.length) {
+        groupsList.innerHTML = '<div class="empty-small">No groups yet.</div>';
+        return;
+      }
+
+      const sorted = [...groups].sort((a,b) => {
+        const at = timestampMs(a.updatedAt || a.createdAt);
+        const bt = timestampMs(b.updatedAt || b.createdAt);
+        return bt - at;
+      });
+
+      for (const group of sorted) {
+        const btn = document.createElement("button");
+        btn.className = "side-item" + (selectedChat?.type === "group" && selectedChat.id === group.id ? " active" : "");
+        btn.type = "button";
+
+        const avatar = document.createElement("img");
+        avatar.className = "avatar sm";
+        avatar.src = safePicture("", group.name);
+        avatar.alt = "";
+
+        const copy = document.createElement("div");
+        copy.className = "side-copy";
+        const strong = document.createElement("strong");
+        strong.textContent = group.name || "Untitled group";
+        const meta = document.createElement("span");
+        meta.textContent = `${group.memberIds?.length || 0} members${group.lastMessage ? " · " + group.lastMessage : ""}`;
+        copy.append(strong, meta);
+
+        const badge = document.createElement("span");
+        badge.className = "side-badge";
+        badge.textContent = "Group";
+
+        btn.append(avatar, copy, badge);
+        btn.addEventListener("click", () => openGroup(group.id));
+        groupsList.appendChild(btn);
+      }
+    }
+
+    async function saveContact(uid) {
+      if (!currentUser || uid === currentUser.uid) return;
+      await setDoc(doc(db, "users", currentUser.uid, "contacts", uid), {
+        uid,
+        savedAt:serverTimestamp()
+      });
+    }
+
+    async function removeContact(uid) {
+      if (!currentUser) return;
+      await deleteDoc(doc(db, "users", currentUser.uid, "contacts", uid));
+    }
+
+    function directChatId(uidA, uidB) {
+      return [uidA, uidB].sort().join("__");
+    }
+
+    async function ensureDirectChat(otherUid) {
+      const id = directChatId(currentUser.uid, otherUid);
+      const ref = doc(db, "directChats", id);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          memberIds:[currentUser.uid, otherUid],
+          createdAt:serverTimestamp(),
+          updatedAt:serverTimestamp(),
+          lastMessage:"",
+          lastSenderId:""
+        });
+      }
+      return id;
+    }
+
+    function clearMessageSubscription() {
+      if (unsubscribeMessages) unsubscribeMessages();
+      unsubscribeMessages = null;
+    }
+
+    async function openDirectChat(otherUid) {
+      const profile = profileByUid.get(otherUid);
+      if (!profile) return;
+
+      try {
+        const id = await ensureDirectChat(otherUid);
+        selectedChat = {type:"direct", id, otherUid};
+        renderContacts();
+        renderGroups();
+
+        chatAvatar.src = safePicture(profile.photoURL, profile.username);
+        chatAvatar.classList.remove("hidden");
+        chatTitle.textContent = profileLabel(profile);
+        chatMeta.textContent = `Joined ${formatJoined(profile.joinedAt)} · Last active ${formatRelative(profile.lastActiveAt)}`;
+        chatHeaderActions.innerHTML = "";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "ghost-btn";
+        saveBtn.textContent = contactUidSet.has(otherUid) ? "Remove contact" : "Save contact";
+        saveBtn.addEventListener("click", async () => {
+          if (contactUidSet.has(otherUid)) await removeContact(otherUid);
+          else await saveContact(otherUid);
+        });
+        chatHeaderActions.appendChild(saveBtn);
+
+        subscribeMessages("directChats", id);
+      } catch (error) {
+        alert(friendlyError(error));
+      }
+    }
+
+    function openGroup(groupId) {
+      const group = groups.find(g => g.id === groupId);
+      if (!group) return;
+
+      selectedChat = {type:"group", id:group.id};
+      renderContacts();
+      renderGroups();
+
+      chatAvatar.src = safePicture("", group.name);
+      chatAvatar.classList.remove("hidden");
+      chatTitle.textContent = group.name;
+      const names = (group.memberIds || [])
+        .map(uid => profileByUid.get(uid))
+        .filter(Boolean)
+        .map(profileLabel)
+        .slice(0,6);
+      chatMeta.textContent = `${group.memberIds?.length || 0} members${names.length ? " · " + names.join(", ") : ""}`;
+      chatHeaderActions.innerHTML = "";
+
+      subscribeMessages("groups", group.id);
+    }
+
+    function subscribeMessages(rootCollection, conversationId) {
+      clearMessageSubscription();
+      emptyChat.classList.add("hidden");
+      messagesEl.classList.remove("hidden");
+      composer.classList.remove("hidden");
+      messagesEl.innerHTML = '<div class="empty-small">Loading messages…</div>';
+
+      const q = query(
+        collection(db, rootCollection, conversationId, "messages"),
+        orderBy("createdAt", "desc"),
+        limit(200)
+      );
+
+      unsubscribeMessages = onSnapshot(q, snapshot => {
+        const docs = snapshot.docs.map(d => ({id:d.id, ...d.data()})).reverse();
+        renderMessages(docs);
+      }, error => {
+        messagesEl.innerHTML = `<div class="empty-small">${friendlyError(error)}</div>`;
+      });
+    }
+
+    function renderMessages(items) {
+      messagesEl.innerHTML = "";
+
+      if (!items.length) {
+        messagesEl.innerHTML = '<div class="empty-small">No messages yet. Say something.</div>';
+        return;
+      }
+
+      for (const message of items) {
+        const mine = message.senderId === currentUser.uid;
+        const row = document.createElement("div");
+        row.className = "message-row" + (mine ? " mine" : "");
+
+        if (!mine) {
+          const senderProfile = profileByUid.get(message.senderId);
+          const avatar = document.createElement("img");
+          avatar.className = "avatar sm";
+          avatar.src = safePicture(senderProfile?.photoURL, senderProfile?.username);
+          avatar.alt = "";
+          row.appendChild(avatar);
+        }
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+
+        if (selectedChat?.type === "group" && !mine) {
+          const author = document.createElement("div");
+          author.className = "message-author";
+          author.textContent = profileLabel(profileByUid.get(message.senderId));
+          bubble.appendChild(author);
+        }
+
+        const text = document.createElement("div");
+        text.textContent = message.text || "";
+        bubble.appendChild(text);
+
+        const time = document.createElement("div");
+        time.className = "message-time";
+        time.textContent = formatRelative(message.createdAt);
+        bubble.appendChild(time);
+
+        row.appendChild(bubble);
+        messagesEl.appendChild(row);
+      }
+
+      requestAnimationFrame(() => {
+        $("chatBody").scrollTop = $("chatBody").scrollHeight;
+      });
+    }
+
+    async function sendMessage(text) {
+      if (!selectedChat || !currentUser) return;
+      const clean = text.trim();
+      if (!clean || clean.length > 4000) return;
+
+      const root = selectedChat.type === "direct" ? "directChats" : "groups";
+      const parentRef = doc(db, root, selectedChat.id);
+
+      const batch = writeBatch(db);
+      const messageRef = doc(collection(db, root, selectedChat.id, "messages"));
+
+      batch.set(messageRef, {
+        senderId:currentUser.uid,
+        text:clean,
+        createdAt:serverTimestamp()
+      });
+
+      batch.update(parentRef, {
+        updatedAt:serverTimestamp(),
+        lastMessage:clean.slice(0,160),
+        lastSenderId:currentUser.uid
+      });
+
+      await batch.commit();
+
+      updateLastActive(true);
+    }
+
+    composer.addEventListener("submit", async event => {
+      event.preventDefault();
+      const text = messageInput.value;
+      if (!text.trim()) return;
+
+      sendBtn.disabled = true;
+      messageInput.disabled = true;
+      try {
+        await sendMessage(text);
+        messageInput.value = "";
+        messageInput.focus();
+      } catch (error) {
+        alert(friendlyError(error));
+      } finally {
+        sendBtn.disabled = false;
+        messageInput.disabled = false;
+      }
+    });
+
+    function openGroupModal() {
+      groupNameInput.value = "";
+      groupMemberSearch.value = "";
+      setStatus(groupStatus, "");
+      renderGroupMembers();
+      groupModal.classList.remove("hidden");
+      setTimeout(() => groupNameInput.focus(), 0);
+    }
+
+    function closeGroupModal() {
+      groupModal.classList.add("hidden");
+    }
+
+    function renderGroupMembers() {
+      const term = groupMemberSearch.value.trim().toLowerCase();
+      groupMemberList.innerHTML = "";
+
+      const candidates = profiles
+        .filter(p => p.uid !== currentUser?.uid)
+        .filter(p => !term || `${p.username || ""} ${p.displayName || ""}`.toLowerCase().includes(term));
+
+      if (!candidates.length) {
+        groupMemberList.innerHTML = '<div class="empty-small">No matching users.</div>';
+        return;
+      }
+
+      for (const profile of candidates) {
+        const row = document.createElement("label");
+        row.className = "member-row";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = profile.uid;
+        checkbox.dataset.groupMember = "1";
+
+        const avatar = document.createElement("img");
+        avatar.className = "avatar sm";
+        avatar.src = safePicture(profile.photoURL, profile.username);
+        avatar.alt = "";
+
+        const copy = document.createElement("div");
+        copy.className = "side-copy";
+        const strong = document.createElement("strong");
+        strong.textContent = profileLabel(profile);
+        const span = document.createElement("span");
+        span.textContent = `Last active ${formatRelative(profile.lastActiveAt)}`;
+        copy.append(strong, span);
+
+        row.append(checkbox, avatar, copy);
+        groupMemberList.appendChild(row);
+      }
+    }
+
+    async function createGroup() {
+      const name = groupNameInput.value.trim();
+      if (name.length < 2 || name.length > 60) {
+        setStatus(groupStatus, "Group name must be 2–60 characters.");
+        return;
+      }
+
+      const selectedUids = [...groupMemberList.querySelectorAll('input[data-group-member="1"]:checked')].map(el => el.value);
+      const memberIds = [...new Set([currentUser.uid, ...selectedUids])];
+
+      if (memberIds.length < 2) {
+        setStatus(groupStatus, "Choose at least one other member.");
+        return;
+      }
+
+      createGroupBtn.disabled = true;
+      createGroupBtn.textContent = "Creating…";
+
+      try {
+        const ref = await addDoc(collection(db, "groups"), {
+          name,
+          nameNormalized:name.toLowerCase(),
+          createdBy:currentUser.uid,
+          memberIds,
+          createdAt:serverTimestamp(),
+          updatedAt:serverTimestamp(),
+          lastMessage:"",
+          lastSenderId:""
+        });
+
+        closeGroupModal();
+
+        selectedChat = {type:"group", id:ref.id};
+        chatAvatar.src = safePicture("", name);
+        chatAvatar.classList.remove("hidden");
+        chatTitle.textContent = name;
+        chatMeta.textContent = `${memberIds.length} members`;
+        chatHeaderActions.innerHTML = "";
+        renderContacts();
+        renderGroups();
+        subscribeMessages("groups", ref.id);
+      } catch (error) {
+        setStatus(groupStatus, friendlyError(error));
+      } finally {
+        createGroupBtn.disabled = false;
+        createGroupBtn.textContent = "Create group";
+      }
+    }
+
+    function subscribeCoreData() {
+      cleanupSubscriptions();
+
+      const profileQuery = query(collection(db, "profiles"), orderBy("usernameNormalized"));
+      unsubscribeProfiles = onSnapshot(profileQuery, snapshot => {
+        profiles = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
+        profileByUid = new Map(profiles.map(p => [p.uid || p.id, p]));
+        renderDirectory();
+        renderContacts();
+        renderGroups();
+      }, error => console.error("profiles", error));
+
+      unsubscribeContacts = onSnapshot(collection(db, "users", currentUser.uid, "contacts"), snapshot => {
+        contacts = snapshot.docs.map(d => ({id:d.id, ...d.data(), uid:d.data().uid || d.id}));
+        contactUidSet = new Set(contacts.map(c => c.uid));
+        renderContacts();
+        renderDirectory();
+      }, error => console.error("contacts", error));
+
+      const groupQuery = query(collection(db, "groups"), where("memberIds", "array-contains", currentUser.uid));
+      unsubscribeGroups = onSnapshot(groupQuery, snapshot => {
+        groups = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
+        renderGroups();
+        if (selectedChat?.type === "group") {
+          const current = groups.find(g => g.id === selectedChat.id);
+          if (current) {
+            chatTitle.textContent = current.name;
+            chatMeta.textContent = `${current.memberIds?.length || 0} members`;
+          }
+        }
+      }, error => console.error("groups", error));
+    }
+
+    function cleanupSubscriptions() {
+      [unsubscribeProfiles, unsubscribeContacts, unsubscribeGroups, unsubscribeMessages].forEach(fn => {
+        try { if (fn) fn(); } catch {}
+      });
+      unsubscribeProfiles = unsubscribeContacts = unsubscribeGroups = unsubscribeMessages = null;
+    }
+
+    async function loadOrCreateFlow(user) {
       const userRef = doc(db, "users", user.uid);
       const snapshot = await getDoc(userRef);
 
       if (!snapshot.exists()) {
-        showUsernameSetup(user);
+        pendingFirebaseUser = user;
+        $("pendingAvatar").src = safePicture(user.photoURL, user.displayName);
+        $("pendingName").textContent = user.displayName || "Google user";
+        $("pendingEmail").textContent = user.email || "";
+        usernameInput.value = "";
+        showAuth(usernameView);
         return;
       }
 
       const account = snapshot.data();
+      await setDoc(userRef, {
+        uid:user.uid,
+        email:user.email || account.email || "",
+        displayName:user.displayName || account.displayName || "",
+        photoURL:user.photoURL || account.photoURL || "",
+        provider:"google",
+        lastSignInAt:serverTimestamp()
+      }, {merge:true});
 
-      await setDoc(
-        userRef,
-        {
-          uid: user.uid,
-          email: user.email || account.email || "",
-          displayName: user.displayName || account.displayName || "",
-          photoURL: user.photoURL || account.photoURL || "",
-          provider: "google",
-          lastSignInAt: serverTimestamp()
-        },
-        { merge: true }
-      );
+      currentUser = user;
+      currentAccount = {
+        ...account,
+        email:user.email || account.email || "",
+        displayName:user.displayName || account.displayName || "",
+        photoURL:user.photoURL || account.photoURL || ""
+      };
 
-      showAccount(
-        {
-          ...account,
-          email: user.email || account.email || "",
-          displayName: user.displayName || account.displayName || "",
-          photoURL: user.photoURL || account.photoURL || ""
-        },
-        user.uid
-      );
+      await ensureProfile(user, currentAccount);
+      renderCurrentUser();
+      showApp();
+      subscribeCoreData();
+      startActivityHeartbeat();
     }
-
-    window.handleCredentialResponse = async function(response) {
-      setStatus(loginStatus, "Signing in…");
-
-      try {
-        if (!response?.credential) throw new Error("Google did not return an ID token.");
-
-        const firebaseCredential = GoogleAuthProvider.credential(response.credential);
-        const result = await signInWithCredential(auth, firebaseCredential);
-        await loadOrCreateFlow(result.user);
-      } catch (error) {
-        setStatus(loginStatus, friendlyError(error));
-      }
-    };
-
-    function initGoogleSignIn() {
-      if (googleInitialized) return;
-
-      if (!window.google?.accounts?.id) {
-        setStatus(loginStatus, "Google Identity Services failed to load. Check your internet connection or browser extensions.");
-        return;
-      }
-
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: window.handleCredentialResponse,
-        ux_mode: "popup",
-        use_fedcm_for_button: true,
-        auto_select: false
-      });
-
-      window.google.accounts.id.renderButton(
-        document.getElementById("googleButton"),
-        {
-          type: "standard",
-          theme: "outline",
-          size: "large",
-          text: "continue_with",
-          shape: "rectangular",
-          logo_alignment: "left",
-          width: 320
-        }
-      );
-
-      googleInitialized = true;
-    }
-
-    window.onGoogleLibraryLoad = initGoogleSignIn;
-    if (window.google?.accounts?.id) initGoogleSignIn();
 
     async function createAccountWithUsername(user, rawUsername) {
       const username = rawUsername.trim();
       const normalized = normalizeUsername(username);
 
-      if (!isValidUsername(username)) {
-        throw new Error("Username must be 3–24 characters using letters, numbers, _, . or -");
-      }
+      if (!isValidUsername(username)) throw new Error("Username must be 3–24 characters using letters, numbers, _, . or -");
 
       const userRef = doc(db, "users", user.uid);
       const usernameRef = doc(db, "usernames", normalized);
+      const profileRef = doc(db, "profiles", user.uid);
 
       await runTransaction(db, async transaction => {
         const usernameSnapshot = await transaction.get(usernameRef);
         const userSnapshot = await transaction.get(userRef);
 
-        if (usernameSnapshot.exists()) {
-          const ownerUid = usernameSnapshot.data()?.uid;
-          if (ownerUid !== user.uid) throw new Error("That username is already taken.");
+        if (usernameSnapshot.exists() && usernameSnapshot.data()?.uid !== user.uid) {
+          throw new Error("That username is already taken.");
         }
 
         if (userSnapshot.exists()) return;
 
         if (!usernameSnapshot.exists()) {
           transaction.set(usernameRef, {
-            uid: user.uid,
+            uid:user.uid,
             username,
-            createdAt: serverTimestamp()
+            createdAt:serverTimestamp()
           });
         }
 
         transaction.set(userRef, {
-          uid: user.uid,
+          uid:user.uid,
           username,
-          usernameNormalized: normalized,
-          email: user.email || "",
-          displayName: user.displayName || "",
-          photoURL: user.photoURL || "",
-          provider: "google",
-          createdAt: serverTimestamp(),
-          lastSignInAt: serverTimestamp()
+          usernameNormalized:normalized,
+          email:user.email || "",
+          displayName:user.displayName || "",
+          photoURL:user.photoURL || "",
+          provider:"google",
+          createdAt:serverTimestamp(),
+          lastSignInAt:serverTimestamp()
+        });
+
+        transaction.set(profileRef, {
+          uid:user.uid,
+          username,
+          usernameNormalized:normalized,
+          displayName:user.displayName || "",
+          photoURL:user.photoURL || "",
+          joinedAt:serverTimestamp(),
+          lastActiveAt:serverTimestamp()
         });
       });
-
-      const createdSnapshot = await getDoc(userRef);
-      if (!createdSnapshot.exists()) {
-        throw new Error("Account creation finished but the Firestore user document was not found.");
-      }
-      return createdSnapshot.data();
     }
 
     saveUsernameBtn.addEventListener("click", async () => {
-      setStatus(usernameStatus, "");
       const user = pendingFirebaseUser || auth.currentUser;
-
-      if (!user) {
-        setStatus(usernameStatus, "Firebase session is missing. Sign in with Google again.");
-        showOnly(loginView);
-        return;
-      }
+      if (!user) return showAuth(loginView);
 
       const username = usernameInput.value.trim();
       if (!isValidUsername(username)) {
@@ -392,11 +1320,10 @@
 
       saveUsernameBtn.disabled = true;
       saveUsernameBtn.textContent = "Creating…";
-
       try {
-        const account = await createAccountWithUsername(user, username);
-        setStatus(usernameStatus, "Account created.", true);
-        showAccount(account, user.uid);
+        await createAccountWithUsername(user, username);
+        pendingFirebaseUser = null;
+        await loadOrCreateFlow(user);
       } catch (error) {
         setStatus(usernameStatus, friendlyError(error));
       } finally {
@@ -409,38 +1336,104 @@
       if (event.key === "Enter") saveUsernameBtn.click();
     });
 
-    logoutBtn.addEventListener("click", async () => {
-      logoutBtn.disabled = true;
-
+    window.handleCredentialResponse = async response => {
+      setStatus(loginStatus, "Signing in…");
       try {
-        await signOut(auth);
-        pendingFirebaseUser = null;
-        if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect();
+        if (!response?.credential) throw new Error("Google did not return an ID token.");
+        const credential = GoogleAuthProvider.credential(response.credential);
+        await signInWithCredential(auth, credential);
+        // onAuthStateChanged is the single source of truth for loading the app.
         setStatus(loginStatus, "");
-        showOnly(loginView);
       } catch (error) {
         setStatus(loginStatus, friendlyError(error));
-        showOnly(loginView);
-      } finally {
-        logoutBtn.disabled = false;
+      }
+    };
+
+    function initGoogleSignIn() {
+      if (googleInitialized) return;
+      if (!window.google?.accounts?.id) {
+        setStatus(loginStatus, "Google Identity Services failed to load.");
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id:GOOGLE_CLIENT_ID,
+        callback:window.handleCredentialResponse,
+        ux_mode:"popup",
+        use_fedcm_for_button:true,
+        auto_select:false
+      });
+
+      window.google.accounts.id.renderButton($("googleButton"), {
+        type:"standard",
+        theme:"outline",
+        size:"large",
+        text:"continue_with",
+        shape:"rectangular",
+        logo_alignment:"left",
+        width:320
+      });
+
+      googleInitialized = true;
+    }
+
+    window.onGoogleLibraryLoad = initGoogleSignIn;
+    if (window.google?.accounts?.id) initGoogleSignIn();
+
+    $("logoutBtn").addEventListener("click", async () => {
+      try {
+        stopActivityHeartbeat();
+        cleanupSubscriptions();
+        selectedChat = null;
+        currentUser = null;
+        currentAccount = null;
+        profiles = [];
+        contacts = [];
+        groups = [];
+        await signOut(auth);
+        if (window.google?.accounts?.id) window.google.accounts.id.disableAutoSelect();
+        showAuth(loginView);
+      } catch (error) {
+        alert(friendlyError(error));
       }
     });
 
-    onAuthStateChanged(auth, async user => {
-      try {
-        if (!user) {
-          pendingFirebaseUser = null;
-          if (!authBootFinished) showOnly(loginView);
-          authBootFinished = true;
-          return;
-        }
+    directorySearch.addEventListener("focus", () => directoryPanel.classList.remove("hidden"));
+    directorySearch.addEventListener("input", () => {
+      directoryPanel.classList.remove("hidden");
+      renderDirectory();
+    });
+    peopleBtn.addEventListener("click", () => directoryPanel.classList.toggle("hidden"));
 
+    document.addEventListener("click", event => {
+      const inPanel = directoryPanel.contains(event.target);
+      const inSearch = directorySearch.contains(event.target);
+      const isPeople = peopleBtn.contains(event.target);
+      if (!inPanel && !inSearch && !isPeople) directoryPanel.classList.add("hidden");
+    });
+
+    $("newGroupBtn").addEventListener("click", openGroupModal);
+    $("newGroupTopBtn").addEventListener("click", openGroupModal);
+    $("closeGroupModalBtn").addEventListener("click", closeGroupModal);
+    $("cancelGroupBtn").addEventListener("click", closeGroupModal);
+    createGroupBtn.addEventListener("click", createGroup);
+    groupMemberSearch.addEventListener("input", renderGroupMembers);
+    groupModal.addEventListener("click", event => {
+      if (event.target === groupModal) closeGroupModal();
+    });
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
+        stopActivityHeartbeat();
+        cleanupSubscriptions();
+        showAuth(loginView);
+        return;
+      }
+      try {
         await loadOrCreateFlow(user);
-        authBootFinished = true;
       } catch (error) {
-        authBootFinished = true;
         setStatus(loginStatus, friendlyError(error));
-        showOnly(loginView);
+        showAuth(loginView);
       }
     });
   </script>
