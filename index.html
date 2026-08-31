@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>Google Auth Test</title>
+  <style>
+    :root{
+      --bg:#0b0d12;
+      --panel:#121620;
+      --panel2:#181e2b;
+      --text:#f7f8fb;
+      --muted:#9aa4b2;
+      --border:#2a3140;
+      --accent:#7c8cff;
+      --danger:#ff6b6b;
+      --success:#43d17a;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:20px;
+      background:
+        radial-gradient(circle at top, rgba(124,140,255,.14), transparent 35%),
+        var(--bg);
+      color:var(--text);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+
+    .card{
+      width:min(460px,100%);
+      padding:28px;
+      border:1px solid var(--border);
+      border-radius:24px;
+      background:rgba(18,22,32,.94);
+      box-shadow:0 24px 80px rgba(0,0,0,.42);
+      backdrop-filter:blur(18px);
+    }
+
+    h1{
+      margin:0 0 8px;
+      font-size:28px;
+      letter-spacing:-.03em;
+    }
+
+    .subtitle{
+      margin:0 0 22px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    .google-wrap{
+      min-height:44px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      margin:14px 0 8px;
+    }
+
+    .hidden{display:none!important}
+
+    .status{
+      margin-top:13px;
+      min-height:20px;
+      color:#ff9a9a;
+      font-size:13px;
+      line-height:1.45;
+      text-align:center;
+    }
+
+    .note{
+      margin-top:18px;
+      padding:12px 14px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#0f131c;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .profile{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-top:18px;
+      padding:16px;
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:var(--panel2);
+    }
+
+    .avatar{
+      width:52px;
+      height:52px;
+      flex:none;
+      border-radius:50%;
+      object-fit:cover;
+      background:#242b39;
+      border:1px solid var(--border);
+    }
+
+    .profile-main{
+      min-width:0;
+      flex:1;
+    }
+
+    .profile-main strong,
+    .profile-main span{
+      display:block;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .profile-main strong{
+      font-size:16px;
+    }
+
+    .profile-main span{
+      margin-top:3px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .badge{
+      display:inline-flex;
+      margin-top:8px;
+      padding:5px 9px;
+      border:1px solid rgba(67,209,122,.25);
+      border-radius:999px;
+      background:rgba(67,209,122,.12);
+      color:#75e8a5;
+      font-size:11px;
+      font-weight:800;
+    }
+
+    label{
+      display:block;
+      margin:18px 0 7px;
+      color:#d8deea;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    input{
+      width:100%;
+      padding:13px 14px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      outline:none;
+      background:var(--panel2);
+      color:var(--text);
+      font:inherit;
+    }
+
+    input:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(124,140,255,.13);
+    }
+
+    .primary,
+    .logout{
+      width:100%;
+      margin-top:16px;
+      padding:13px 16px;
+      border-radius:13px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .primary{
+      border:0;
+      background:var(--accent);
+      color:#fff;
+    }
+
+    .primary:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+    }
+
+    .logout{
+      border:1px solid rgba(255,107,107,.35);
+      background:transparent;
+      color:#ff9a9a;
+    }
+
+    .small-button{
+      margin-top:11px;
+      padding:0;
+      border:0;
+      background:transparent;
+      color:var(--muted);
+      text-decoration:underline;
+      cursor:pointer;
+      font-size:12px;
+    }
+
+    code{
+      color:#dfe3ff;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <section id="loginView">
+      <h1>Sign in</h1>
+      <p class="subtitle">
+        Real Google sign-in, with a simple local username linked to the Google account.
+      </p>
+
+      <div id="googleButton" class="google-wrap"></div>
+      <div id="loginStatus" class="status"></div>
+
+      <div class="note">
+        <strong>Test build:</strong> Google performs the real account sign-in, but this page has no backend.
+        The username/account record is stored only in this browser's <code>localStorage</code>.
+      </div>
+    </section>
+
+    <section id="usernameView" class="hidden">
+      <h1>Choose a username</h1>
+      <p class="subtitle">
+        Your Google account is authenticated. Pick the local username that will be linked to it.
+      </p>
+
+      <div class="profile">
+        <img id="pendingAvatar" class="avatar" alt="Google profile picture" />
+        <div class="profile-main">
+          <strong id="pendingName"></strong>
+          <span id="pendingEmail"></span>
+          <div class="badge">Google authenticated</div>
+        </div>
+      </div>
+
+      <label for="usernameInput">Username</label>
+      <input
+        id="usernameInput"
+        type="text"
+        maxlength="24"
+        autocomplete="username"
+        placeholder="your_username"
+      />
+
+      <button id="saveUsernameBtn" class="primary">Create account</button>
+      <div id="usernameStatus" class="status"></div>
+    </section>
+
+    <section id="accountView" class="hidden">
+      <h1>Account</h1>
+      <p class="subtitle">Signed in successfully.</p>
+
+      <div class="profile">
+        <img id="accountAvatar" class="avatar" alt="Google profile picture" />
+        <div class="profile-main">
+          <strong id="accountUsername"></strong>
+          <span id="accountEmail"></span>
+          <div class="badge">Google</div>
+        </div>
+      </div>
+
+      <button id="logoutBtn" class="logout">Sign out of this test</button>
+      <button id="clearBtn" class="small-button">Delete all local test accounts</button>
+
+      <div class="note">
+        Signing out here clears only this test page's local session. It does not sign you out of Google.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /*
+      ============================================================
+      STEP 1: PASTE YOUR GOOGLE WEB CLIENT ID BELOW
+      Example:
+      123456789012-abcdefg12345.apps.googleusercontent.com
+      ============================================================
+    */
+    const GOOGLE_CLIENT_ID = "445548931187-d4o78omk21vl4jempfbv57q56i90n8h9.apps.googleusercontent.com";
+
+    /*
+      This test is intended for:
+      https://timmiballz22.github.io/google-auth-test/
+
+      Authorized JavaScript origin in Google Cloud must be:
+      https://timmiballz22.github.io
+
+      Do NOT include /google-auth-test/ in the Authorized JavaScript origin.
+      No Authorized redirect URI is needed for this popup + JavaScript callback flow.
+    */
+
+    const STORAGE_ACCOUNTS = "googleAuthTest.accounts.v2";
+    const STORAGE_SESSION = "googleAuthTest.session.v2";
+
+    const loginView = document.getElementById("loginView");
+    const usernameView = document.getElementById("usernameView");
+    const accountView = document.getElementById("accountView");
+
+    const loginStatus = document.getElementById("loginStatus");
+    const usernameStatus = document.getElementById("usernameStatus");
+    const usernameInput = document.getElementById("usernameInput");
+    const saveUsernameBtn = document.getElementById("saveUsernameBtn");
+
+    let pendingGoogleProfile = null;
+    let googleInitialized = false;
+
+    function showOnly(view) {
+      loginView.classList.add("hidden");
+      usernameView.classList.add("hidden");
+      accountView.classList.add("hidden");
+      view.classList.remove("hidden");
+    }
+
+    function loadAccounts() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_ACCOUNTS));
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveAccounts(accounts) {
+      localStorage.setItem(STORAGE_ACCOUNTS, JSON.stringify(accounts));
+    }
+
+    function getSession() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_SESSION));
+      } catch {
+        return null;
+      }
+    }
+
+    function setSession(googleSub) {
+      localStorage.setItem(
+        STORAGE_SESSION,
+        JSON.stringify({
+          googleSub,
+          signedInAt: new Date().toISOString()
+        })
+      );
+    }
+
+    function clearSession() {
+      localStorage.removeItem(STORAGE_SESSION);
+    }
+
+    function isClientIdConfigured() {
+      return (
+        GOOGLE_CLIENT_ID &&
+        !GOOGLE_CLIENT_ID.includes("PASTE_YOUR_GOOGLE_CLIENT_ID_HERE") &&
+        GOOGLE_CLIENT_ID.endsWith(".apps.googleusercontent.com")
+      );
+    }
+
+    function decodeJwtPayload(jwt) {
+      const parts = String(jwt || "").split(".");
+      if (parts.length !== 3) {
+        throw new Error("Google returned an invalid ID token.");
+      }
+
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+      const binary = atob(padded);
+
+      const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+      const json = new TextDecoder("utf-8").decode(bytes);
+
+      return JSON.parse(json);
+    }
+
+    /*
+      IMPORTANT:
+      For this no-backend TEST, the page decodes the Google ID token in the browser.
+      This does NOT cryptographically verify the JWT signature.
+
+      In production, send response.credential to your backend and verify the token
+      there with Google's libraries/public keys before trusting the identity.
+    */
+    function basicTestChecks(profile) {
+      if (!profile || !profile.sub || !profile.email) {
+        throw new Error("Google profile is missing required identity fields.");
+      }
+
+      if (
+        profile.iss !== "https://accounts.google.com" &&
+        profile.iss !== "accounts.google.com"
+      ) {
+        throw new Error("Unexpected token issuer.");
+      }
+
+      if (profile.aud !== GOOGLE_CLIENT_ID) {
+        throw new Error("Token audience does not match this app's Client ID.");
+      }
+
+      if (profile.exp && Date.now() >= Number(profile.exp) * 1000) {
+        throw new Error("Google ID token has expired.");
+      }
+
+      if (profile.email_verified === false) {
+        throw new Error("Google did not mark this email as verified.");
+      }
+    }
+
+    function safePicture(url) {
+      if (typeof url === "string" && /^https:\/\/.+/i.test(url)) {
+        return url;
+      }
+      return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">' +
+        '<rect width="100" height="100" rx="50" fill="#2a3140"/>' +
+        '<text x="50" y="61" text-anchor="middle" fill="#ffffff" font-size="42" font-family="Arial">G</text>' +
+        '</svg>'
+      );
+    }
+
+    function isValidUsername(username) {
+      return /^[A-Za-z0-9_.-]{3,24}$/.test(username);
+    }
+
+    function showUsernameSetup(profile) {
+      pendingGoogleProfile = profile;
+
+      document.getElementById("pendingAvatar").src = safePicture(profile.picture);
+      document.getElementById("pendingName").textContent = profile.name || "Google user";
+      document.getElementById("pendingEmail").textContent = profile.email;
+
+      usernameInput.value = "";
+      usernameStatus.textContent = "";
+      showOnly(usernameView);
+      usernameInput.focus();
+    }
+
+    function showAccount(account) {
+      document.getElementById("accountAvatar").src = safePicture(account.picture);
+      document.getElementById("accountUsername").textContent = account.username;
+      document.getElementById("accountEmail").textContent = account.email;
+      showOnly(accountView);
+    }
+
+    function handleCredentialResponse(response) {
+      loginStatus.textContent = "";
+
+      try {
+        if (!response || !response.credential) {
+          throw new Error("Google did not return an ID credential.");
+        }
+
+        const profile = decodeJwtPayload(response.credential);
+        basicTestChecks(profile);
+
+        const accounts = loadAccounts();
+        const existing = accounts[profile.sub];
+
+        if (existing) {
+          // Refresh display fields in case the Google profile changed.
+          existing.email = profile.email;
+          existing.name = profile.name || existing.name || "";
+          existing.picture = profile.picture || existing.picture || "";
+          existing.lastGoogleSignInAt = new Date().toISOString();
+
+          accounts[profile.sub] = existing;
+          saveAccounts(accounts);
+          setSession(profile.sub);
+          showAccount(existing);
+          return;
+        }
+
+        showUsernameSetup(profile);
+      } catch (error) {
+        console.error(error);
+        loginStatus.textContent =
+          error && error.message ? error.message : "Google sign-in failed.";
+      }
+    }
+
+    function initGoogleSignIn() {
+      if (googleInitialized) return;
+
+      if (!isClientIdConfigured()) {
+        loginStatus.textContent =
+          "Setup required: paste your Google Web Client ID into GOOGLE_CLIENT_ID in this HTML file.";
+        return;
+      }
+
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        loginStatus.textContent =
+          "Google Identity Services did not load. Check your internet connection or browser blocking.";
+        return;
+      }
+
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+        ux_mode: "popup",
+        use_fedcm_for_button: true,
+        auto_select: false
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById("googleButton"),
+        {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          shape: "rectangular",
+          logo_alignment: "left",
+          width: 320
+        }
+      );
+
+      googleInitialized = true;
+    }
+
+    saveUsernameBtn.addEventListener("click", () => {
+      usernameStatus.textContent = "";
+
+      if (!pendingGoogleProfile) {
+        usernameStatus.textContent =
+          "Your Google sign-in session is missing. Sign in again.";
+        showOnly(loginView);
+        return;
+      }
+
+      const username = usernameInput.value.trim();
+
+      if (!isValidUsername(username)) {
+        usernameStatus.textContent =
+          "Use 3–24 characters: letters, numbers, _, . or -";
+        return;
+      }
+
+      const accounts = loadAccounts();
+
+      const usernameTaken = Object.values(accounts).some(account =>
+        String(account.username || "").toLowerCase() === username.toLowerCase()
+      );
+
+      if (usernameTaken) {
+        usernameStatus.textContent = "That username is already taken in this browser.";
+        return;
+      }
+
+      const profile = pendingGoogleProfile;
+
+      const account = {
+        googleSub: profile.sub,
+        username,
+        email: profile.email,
+        name: profile.name || "",
+        givenName: profile.given_name || "",
+        familyName: profile.family_name || "",
+        picture: profile.picture || "",
+        provider: "google",
+        createdAt: new Date().toISOString(),
+        lastGoogleSignInAt: new Date().toISOString()
+      };
+
+      accounts[profile.sub] = account;
+      saveAccounts(accounts);
+      setSession(profile.sub);
+
+      pendingGoogleProfile = null;
+      showAccount(account);
+    });
+
+    usernameInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        saveUsernameBtn.click();
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      clearSession();
+      pendingGoogleProfile = null;
+
+      if (window.google?.accounts?.id) {
+        google.accounts.id.disableAutoSelect();
+      }
+
+      showOnly(loginView);
+      loginStatus.textContent = "";
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      localStorage.removeItem(STORAGE_ACCOUNTS);
+      localStorage.removeItem(STORAGE_SESSION);
+      pendingGoogleProfile = null;
+
+      if (window.google?.accounts?.id) {
+        google.accounts.id.disableAutoSelect();
+      }
+
+      showOnly(loginView);
+      loginStatus.textContent = "Local test accounts deleted.";
+    });
+
+    function restoreLocalSession() {
+      const session = getSession();
+
+      if (!session || !session.googleSub) {
+        showOnly(loginView);
+        return;
+      }
+
+      const accounts = loadAccounts();
+      const account = accounts[session.googleSub];
+
+      if (!account) {
+        clearSession();
+        showOnly(loginView);
+        return;
+      }
+
+      showAccount(account);
+    }
+
+    // Restore the local app session immediately.
+    restoreLocalSession();
+
+    // Called by the Google Identity Services script after it finishes loading.
+    window.onGoogleLibraryLoad = initGoogleSignIn;
+  </script>
+
+  <!-- Google officially requires loading GIS from this URL; do not self-host it. -->
+  <script
+    src="https://accounts.google.com/gsi/client"
+    async
+    defer
+    onload="onGoogleLibraryLoad()">
+  </script>
+</body>
+</html>
